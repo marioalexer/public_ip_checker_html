@@ -1,4 +1,4 @@
-# IP pública – HTML simple
+# public_ip_checker_html
 
 Página HTML estática para detectar y copiar la IP pública del navegador.  
 No requiere backend ni dependencias externas locales.

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tu IP pública</title>
+
+  <!-- Favicon fijo -->
+  <link id="favicon" rel="icon" href="favicon.png" type="image/png" />
+
+  <!-- Ajuste de color del navegador -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#121212">
+
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: grid; place-items: center; line-height: 1.4;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    main { text-align: center; padding: 24px; }
+    .logo { display: inline-block; margin-bottom: 12px; }
+    .logo img {
+      display: block; margin: 0 auto;
+      max-width: 90vw; max-height: 144px; height: auto; width: auto;
+      cursor: pointer;
+    }
+    #ip { font-size: clamp(32px, 8vw, 64px); font-weight: 800; letter-spacing: .2px; cursor: pointer; }
+    .hint { margin-top: 8px; font-size: 14px; opacity: .7; }
+    button {
+      margin-top: 12px; padding: 8px 14px; font-weight: 600; cursor: pointer;
+      background: transparent; border: 2px solid currentColor; border-radius: 999px;
+    }
+    button:disabled { opacity: .6; cursor: default; }
+    button:focus-visible { outline: 2px dashed currentColor; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- Logo/enlace fijos; quita target si no lo necesitas -->
+    <a id="logoLink" class="logo" href="https://nomad-idea.com/">
+      <img id="logo" src="logo.png"
+           alt="Logo" loading="lazy" decoding="async"
+           onerror="this.closest('a').style.display='none'">
+    </a>
+
+    <div id="ip" title="Clic para copiar">Detectando…</div>
+    <div class="hint">Clic en “Copiar” o pulsa sobre la IP</div>
+    <button id="copy" style="display:none;">Copiar</button>
+    <noscript>Activa JavaScript para ver tu IP pública.</noscript>
+  </main>
+
+  <script>
+  (async () => {
+    const ipEl = document.getElementById('ip');
+    const btn  = document.getElementById('copy');
+
+    const providers = [
+      async () => (await (await fetch('https://api.ipify.org?format=json',{cache:'no-store'})).json()).ip,
+      async () => (await (await fetch('https://api64.ipify.org?format=json',{cache:'no-store'})).json()).ip,
+      async () => (await (await fetch('https://ipapi.co/json/',{cache:'no-store'})).json()).ip,
+      async () => (await (await fetch('https://api.myip.com',{cache:'no-store'})).json()).ip,
+    ];
+
+    const timeout = ms => new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')), ms));
+    let ip = null;
+
+    for (const p of providers) {
+      try {
+        ip = await Promise.race([p(), timeout(4000)]);
+        if (ip && typeof ip === 'string') break;
+      } catch {}
+    }
+
+    if (!ip) {
+      ipEl.textContent = 'No se pudo obtener la IP.';
+      document.querySelector('.hint').textContent = 'La red podría estar bloqueando consultas externas.';
+      return;
+    }
+
+    ipEl.textContent = ip;
+
+    async function copyIP() {
+      try {
+        await navigator.clipboard.writeText(ip);
+        const prev = btn.textContent;
+        btn.textContent = 'Copiado';
+        setTimeout(()=> btn.textContent = prev, 1000);
+      } catch {}
+    }
+
+    if (navigator.clipboard?.writeText) {
+      btn.style.display = 'inline-block';
+      btn.addEventListener('click', copyIP);
+      ipEl.addEventListener('click', copyIP);
+    }
+  })();
+  </script>
+</body>
+</html>
